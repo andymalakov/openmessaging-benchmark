@@ -48,13 +48,7 @@
   become: true
   tasks:
     - name: Install RPM packages
-      yum: pkg={{ item }} state=latest
-      with_items:
-          - wget
-          - java
-          - sysstat
-          - vim
-          - chrony
+      yum: pkg=['wget', 'java', 'sysstat', 'vim', 'chrony'] state=latest
     - file: path=/opt/kafka state=absent
     - file: path=/opt/kafka state=directory
     - set_fact:
