@@ -1,5 +1,5 @@
 provider "aws" {
-  region  = "${var.region}"
+  region  = var.region
   version = "1.8"
 }
 
@@ -28,47 +28,49 @@ variable "key_name" {
 
 variable "region" {}
 
-variable "ami" {}
+variable "ami" {
+  type = map(string)
+}
 
 variable "instance_types" {
-  type = "map"
+  type = map(string)
 }
 
 variable "num_instances" {
-  type = "map"
+  type = map(string)
 }
 
 # Create a VPC to launch our instances into
 resource "aws_vpc" "benchmark_vpc" {
   cidr_block = "10.0.0.0/16"
 
-  tags {
+  tags = {
     Name = "Pulsar-Benchmark-VPC-${random_id.hash.hex}"
   }
 }
 
 # Create an internet gateway to give our subnet access to the outside world
 resource "aws_internet_gateway" "pulsar" {
-  vpc_id = "${aws_vpc.benchmark_vpc.id}"
+  vpc_id = aws_vpc.benchmark_vpc.id
 }
 
 # Grant the VPC internet access on its main route table
 resource "aws_route" "internet_access" {
-  route_table_id         = "${aws_vpc.benchmark_vpc.main_route_table_id}"
+  route_table_id         = aws_vpc.benchmark_vpc.main_route_table_id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.pulsar.id}"
+  gateway_id             = aws_internet_gateway.pulsar.id
 }
 
 # Create a subnet to launch our instances into
 resource "aws_subnet" "benchmark_subnet" {
-  vpc_id                  = "${aws_vpc.benchmark_vpc.id}"
+  vpc_id                  = aws_vpc.benchmark_vpc.id
   cidr_block              = "10.0.0.0/24"
   map_public_ip_on_launch = true
 }
 
 resource "aws_security_group" "benchmark_security_group" {
   name   = "terraform-pulsar-${random_id.hash.hex}"
-  vpc_id = "${aws_vpc.benchmark_vpc.id}"
+  vpc_id = aws_vpc.benchmark_vpc.id
 
   # SSH access from anywhere
   ingress {
@@ -108,72 +110,73 @@ resource "aws_security_group" "benchmark_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags {
+  tags = {
     Name = "Benchmark-Security-Group-${random_id.hash.hex}"
   }
 }
 
 resource "aws_key_pair" "auth" {
   key_name   = "${var.key_name}-${random_id.hash.hex}"
-  public_key = "${file(var.public_key_path)}"
+  public_key = file(var.public_key_path)
 }
 
 resource "aws_instance" "zookeeper" {
-  ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["zookeeper"]}"
-  key_name               = "${aws_key_pair.auth.id}"
-  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
-  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["zookeeper"]}"
+  ami                    = var.ami[var.region]
+  instance_type          = var.instance_types["zookeeper"]
+  key_name               = aws_key_pair.auth.id
+  subnet_id              = aws_subnet.benchmark_subnet.id
+  vpc_security_group_ids = [
+    aws_security_group.benchmark_security_group.id]
+  count                  = var.num_instances["zookeeper"]
 
-  tags {
+  tags = {
     Name = "zk-${count.index}"
   }
 }
 
 resource "aws_instance" "pulsar" {
-  ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["pulsar"]}"
-  key_name               = "${aws_key_pair.auth.id}"
-  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
-  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["pulsar"]}"
+  ami                    = var.ami[var.region]
+  instance_type          = var.instance_types["pulsar"]
+  key_name               = aws_key_pair.auth.id
+  subnet_id              = aws_subnet.benchmark_subnet.id
+  vpc_security_group_ids = [aws_security_group.benchmark_security_group.id]
+  count                  = var.num_instances["pulsar"]
 
-  tags {
+  tags = {
     Name = "pulsar-${count.index}"
   }
 }
 
 resource "aws_instance" "client" {
-  ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["client"]}"
-  key_name               = "${aws_key_pair.auth.id}"
-  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
-  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["client"]}"
+  ami                    = var.ami[var.region]
+  instance_type          = var.instance_types["client"]
+  key_name               = aws_key_pair.auth.id
+  subnet_id              = aws_subnet.benchmark_subnet.id
+  vpc_security_group_ids = [aws_security_group.benchmark_security_group.id]
+  count                  = var.num_instances["client"]
 
-  tags {
+  tags = {
     Name = "pulsar-client-${count.index}"
   }
 }
 
 resource "aws_instance" "prometheus" {
-  ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["prometheus"]}"
-  key_name               = "${aws_key_pair.auth.id}"
-  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
-  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["prometheus"]}"
+  ami                    = var.ami[var.region]
+  instance_type          = var.instance_types["prometheus"]
+  key_name               = aws_key_pair.auth.id
+  subnet_id              = aws_subnet.benchmark_subnet.id
+  vpc_security_group_ids = [aws_security_group.benchmark_security_group.id]
+  count                  = var.num_instances["prometheus"]
 
-  tags {
+  tags = {
     Name = "prometheus-${count.index}"
   }
 }
 
 output "client_ssh_host" {
-  value = "${aws_instance.client.0.public_ip}"
+  value = aws_instance.client[0].public_ip
 }
 
 output "prometheus_host" {
-  value = "${aws_instance.prometheus.0.public_ip}"
+  value = aws_instance.prometheus[0].public_ip
 }
