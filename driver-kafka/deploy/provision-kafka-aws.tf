@@ -28,7 +28,9 @@ variable "key_name" {
 
 variable "region" {}
 
-variable "ami" {}
+variable "ami" {
+  type = map(string)
+}
 
 variable "instance_types" {
   type = map(string)
@@ -105,7 +107,7 @@ resource "aws_key_pair" "auth" {
 }
 
 resource "aws_instance" "zookeeper" {
-  ami                    = var.ami
+  ami                    = var.ami[var.region]
   instance_type          = var.instance_types["zookeeper"]
   key_name               = aws_key_pair.auth.id
   subnet_id              = aws_subnet.benchmark_subnet.id
@@ -118,7 +120,7 @@ resource "aws_instance" "zookeeper" {
 }
 
 resource "aws_instance" "kafka" {
-  ami                    = var.ami
+  ami                    = var.ami[var.region]
   instance_type          = var.instance_types["kafka"]
   key_name               = aws_key_pair.auth.id
   subnet_id              = aws_subnet.benchmark_subnet.id
@@ -131,7 +133,7 @@ resource "aws_instance" "kafka" {
 }
 
 resource "aws_instance" "client" {
-  ami                    = var.ami
+  ami                    = var.ami[var.region]
   instance_type          = var.instance_types["client"]
   key_name               = aws_key_pair.auth.id
   subnet_id              = aws_subnet.benchmark_subnet.id
