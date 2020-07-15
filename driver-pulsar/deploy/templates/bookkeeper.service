@@ -3,6 +3,8 @@ Description=Bookkeeper
 After=network.target
 
 [Service]
+Environment="BOOKIE_MEM=-Xms4g -Xmx4g -XX:MaxDirectMemorySize=4g"
+
 ExecStart=/opt/pulsar/bin/pulsar bookie
 WorkingDirectory=/opt/pulsar
 RestartSec=15s
