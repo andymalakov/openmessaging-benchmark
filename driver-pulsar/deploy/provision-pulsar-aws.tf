@@ -125,8 +125,7 @@ resource "aws_instance" "zookeeper" {
   instance_type          = var.instance_types["zookeeper"]
   key_name               = aws_key_pair.auth.id
   subnet_id              = aws_subnet.benchmark_subnet.id
-  vpc_security_group_ids = [
-    aws_security_group.benchmark_security_group.id]
+  vpc_security_group_ids = [aws_security_group.benchmark_security_group.id]
   count                  = var.num_instances["zookeeper"]
 
   tags = {
