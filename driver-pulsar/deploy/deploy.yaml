@@ -48,25 +48,26 @@
     - name: Set performance profile
       command: tuned-adm profile latency-performance
     - name: Install RPM packages
-      yum: pkg={{ item }} state=latest
-      with_items:
+      yum:
+        name:
           - wget
           - java
           - sysstat
           - vim
           - screen
           - chrony
+        state: latest
     - set_fact:
         zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
         serviceUrl: "pulsar://{{ hostvars[groups['pulsar'][0]].private_ip }}:6650/"
         httpUrl: "http://{{ hostvars[groups['pulsar'][0]].private_ip }}:8080/"
-        pulsarVersion: "2.4.0"
+        pulsarVersion: "2.6.0"
     - file: path=/opt/pulsar state=absent
     - file: path=/opt/pulsar state=directory
     - name: Download Pulsar binary package
       unarchive:
-        #src: "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
-        src: "https://archive.apache.org/dist/pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
+        src: "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
+        #src: "https://archive.apache.org/dist/pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
         remote_src: yes
         dest: /opt/pulsar
         extra_opts: ["--strip-components=1"]
